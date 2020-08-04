@@ -1,0 +1,432 @@
+
+<div id="title2">
+    <form id="fuzzySelect" action="/video/fuzzySelect">
+    <input id="input" type="text" name="title"required lay-verify="required"
+           autocomplete="off"
+           class="layui-input"width="60">
+    <select idclass="select" id="name" name="speakerId"data-style="btn-primary"  title="请选择老师">
+        <option value="7">张三</option>
+        <option value="8">李四</option>
+        <option value="9">小明</option>
+        <option value="10">王五</option>
+        <option value="11">赵六</option>
+        <option value="13">李雷</option>
+        <option value="14">韩梅梅</option>
+        <option value="">所有</option>
+    </select>
+    <select  id="course" class="select"name="courseId" data-style="btn-primary" title="请选择课程">
+        <option value="6">Web前端入门小项目</option>
+        <option value="7">前端开发与Git入门</option>
+        <option value="8">每天20分钟轻松入门React</option>
+        <option value="9">UI基础入门</option>
+        <option value="11">Python编程零基础入门</option>
+        <option value="13">轻松进击PHP基础</option>
+        <option value="">所有</option>
+
+    </select>
+    <button  type="button" class="btn btn-primary active" onclick="select1()">查询</button>
+    </form>
+</div>
+
+<table class="layui-hide" id="test" lay-filter="test"></table>
+
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm" lay-event="getCheckData">批量删除</button>
+        <button class="layui-btn layui-btn-sm" lay-event="getCheckLength">获取选中数目</button>
+        <button class="layui-btn layui-btn-sm" lay-event="isAll">增加</button>
+    </div>
+</script>
+
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" >删除</a>
+</script>
+
+
+<script>
+    layui.use('table', function(){
+        var table = layui.table;
+
+        table.render({
+            elem: '#test'
+            ,type:"post"
+            ,url:'video/selectAll'
+            ,toolbar: '#toolbarDemo' //开启头部工具栏，并为其绑定左侧模板
+            ,defaultToolbar: ['filter', 'exports', 'print', { //自定义头部工具栏右侧图标。如无需自定义，去除该参数即可
+                title: '提示'
+                ,layEvent: 'LAYTABLE_TIPS'
+                ,icon: 'layui-icon-tips'
+            }]
+
+            ,title: '用户数据表'
+            ,cols: [[
+                {type: 'checkbox', fixed: 'left'}
+                ,{field:'id', title:'id', sort: true}
+                ,{field:'title', title:'课程名'}
+                /* ,{field:'subjectName', title:'类型'}*/
+                ,{field:'time', title:'时间'}
+                ,{field:'videoUrl', title:'视频'}
+                ,{field:'imageUrl', title:'图片'}
+                ,{field:'playNum', title:'编码'}
+                ,{field:'detail', title:'详情'}
+                ,{field:'speakerName', title:'演讲人'}
+                ,{field:'courseTitle', title:'类型'}
+                /* ,{field:'create_time', title:'时间',templet:"<div>{{layui.util.toDateString(d.create_time, 'yyyy-MM-dd HH:mm:ss')}}</div> "}
+ */
+                ,{fixed: 'right', title:'操作', toolbar: '#barDemo', width:150}
+            ]]
+            ,page:  {limit:2//每页显示1条（ 向后台传值，每页显示条数 ）
+                ,limits:[1,2,3,5] //可选每页条数
+                ,first: '首页' //首页显示文字，默认显示页号
+                ,last: '尾页'
+                ,prev: '<em>←</em>' //上一页显示内容，默认显示 > <
+                ,next: '<i class="layui-icon layui-icon-next"></i>'
+                ,layout:['prev', 'page', 'next','count','limit','skip','refresh'] //自定义分页布局
+            } //开启分页
+        });
+
+        //头工具栏事件
+        table.on('toolbar(test)', function(obj){
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch(obj.event){
+                case 'getCheckData':
+
+                    var data = checkStatus.data;
+                    var params = "";
+                    for(var i in data){
+                        params +="&ids="+data[i].id
+                    }
+                    alert(params);
+                    $.ajax({
+                        url:"course/deleteCourses",
+                        type:"post",
+                        data:params,
+                        success: function(){
+                            window.location.reload();
+                        }
+                    })
+
+                    break;
+                case 'getCheckLength':
+
+                    layer.msg('选中了：'+ data.length + ' 个');
+                    break;
+                case 'isAll':
+                    showMusics(data)
+                    break;
+
+                //自定义头工具栏右侧图标 - 提示
+                case 'LAYTABLE_TIPS':
+                    layer.alert('这是工具栏右侧自定义的一个图标按钮');
+                    break;
+            };
+        });
+
+        //监听行工具事件
+        table.on('tool(test)', function(obj){
+            var data = obj.data;
+            //console.log(data);
+
+            var musicId = data.id;
+
+            if(obj.event === 'del'){
+                layer.confirm('真的删除么', function(index){
+                    //var musicId = obj.config.id;
+
+                    $.ajax({
+
+                        type:"POST",
+                        url: "course/deleteCourse",
+                        data:{"name":musicId},
+
+                        success:function (data) {
+                            console.log(data)
+                            layer.closeAll('loading');
+                            if(data.code==1){
+                                layer.msg('删除成功！', {icon: 1,time:2000,shade:0.2});
+                                location.reload(true);
+                            }else{
+                                layer.msg('删除失败！', {icon: 2,time:3000,shade:0.2});
+                            }
+                        }
+                    })
+                    obj.del();
+                    layer.close(index);
+                });
+            } else if(obj.event === 'edit'){
+                showMusic(data);
+                layer.prompt({
+                    formType: 2
+                    ,value: data.email
+                }, function(value, index){
+                    console.log(value);
+                    obj.update({
+                        email: value
+                    });
+                    layer.close(index);
+                });
+            }
+        });
+    });
+</script>
+<script>
+    function select1(){
+
+        layui.use('table', function(){
+            var table = layui.table;
+            console.log($("#name").serialize())
+            console.log($("#fuzzySelect").serialize())
+            console.log($("#input").serialize())
+            table.render({
+                elem: '#test'
+                ,type:"post"
+
+                ,url:'video/fuzzySelect?'+$("#input").serialize()+"&&"+$("#name").serialize()+"&&"+$("#course").serialize()+"&"
+                ,toolbar: '#toolbarDemo' //开启头部工具栏，并为其绑定左侧模板
+                ,defaultToolbar: ['filter', 'exports', 'print', { //自定义头部工具栏右侧图标。如无需自定义，去除该参数即可
+                    title: '提示'
+                    ,layEvent: 'LAYTABLE_TIPS'
+                    ,icon: 'layui-icon-tips'
+                }]
+
+                ,title: '用户数据表'
+                ,cols: [[
+                    {type: 'checkbox', fixed: 'left'}
+                    ,{field:'id', title:'id', sort: true}
+                    ,{field:'title', title:'课程名'}
+                    /* ,{field:'subjectName', title:'类型'}*/
+                    ,{field:'time', title:'时间'}
+                    ,{field:'videoUrl', title:'视频'}
+                    ,{field:'imageUrl', title:'图片'}
+                    ,{field:'playNum', title:'编码'}
+                    ,{field:'detail', title:'详情'}
+                    ,{field:'speakerName', title:'演讲人'}
+                    ,{field:'courseTitle', title:'类型'}
+                    /* ,{field:'create_time', title:'时间',templet:"<div>{{layui.util.toDateString(d.create_time, 'yyyy-MM-dd HH:mm:ss')}}</div> "}
+     */
+                    ,{fixed: 'right', title:'操作', toolbar: '#barDemo', width:150}
+                ]]
+                ,page:  {limit:2//每页显示1条（ 向后台传值，每页显示条数 ）
+                    ,limits:[1,2,3,5] //可选每页条数
+                    ,first: '首页' //首页显示文字，默认显示页号
+                    ,last: '尾页'
+                    ,prev: '<em>←</em>' //上一页显示内容，默认显示 > <
+                    ,next: '<i class="layui-icon layui-icon-next"></i>'
+                    ,layout:['prev', 'page', 'next','count','limit','skip','refresh'] //自定义分页布局
+                } //开启分页
+            });})}
+
+
+
+</script>
+
+<script>
+    var sheets = null;
+    $(function () {
+        $.ajax({
+            type:"get",
+            url:"course/findAll",
+            success:function (backData) {
+                JSON.stringify(backData);
+                sheets = backData;
+            }
+        })
+    })
+    var speakerSheet = null;
+    $(function () {
+        $.ajax({
+            type:"get",
+            url:"speaker/selectAll",
+            success:function (backData) {
+                JSON.stringify(backData);
+                speakerSheet = backData;
+            }
+        })
+    })
+    function showMusic(data) {
+        layer.open({
+            type:1,
+            content: $('#updateMusic').html(),
+            title:  '修改歌曲',
+            area: ['600px','600px'],
+            btn: ['提交','取消'],
+            success: function() {
+                $('#id').val(data.id);
+                $('#courseTitle').val(data.courseTitle);
+                $('#courseDesc').val(data.courseDesc);
+                for(var i = 0;i<sheets.length;i++){
+                    if(sheets[i].id == 218){
+                        $("#courseId").append('<option selected value="' + sheets[i].id + '">' + sheets[i].courseTitle + '</option>');
+
+                    }else {
+                        $("#courseId").append('<option  value="' + sheets[i].id + '">' + sheets[i].courseTitle + '</option>');
+                    }
+                }
+                for(var i = 0;i<speakerSheet.length;i++){
+                    if(speakerSheet[i].id == 1){
+                        $("#speakerId").append('<option selected value="' + speakerSheet[i].id + '">' + speakerSheet[i].speakerName + '</option>');
+
+                    }else {
+                        $("#speakerId").append('<option  value="' + speakerSheet[i].id + '">' + speakerSheet[i].speakerName + '</option>');
+                    }
+                }
+                layui.form.render();
+            },
+            yes:function (index,layero) {
+                $.ajax({
+                    url: 'course/updateCourse',
+                    data: $("#music-edit-form").serialize(),
+                    method: 'post',
+                    success: function () {
+                        window.location.reload();//重新加载
+                    }
+
+                })
+            }
+        })
+
+    }
+</script>
+<script>
+    var sheets = null;
+    $(function () {
+        $.ajax({
+            type:"get",
+            url:"course/findAll",
+            success:function (backData) {
+                JSON.stringify(backData);
+                sheets = backData;
+            }
+        })
+    })
+    var speakerSheet = null;
+    $(function () {
+        $.ajax({
+            type:"get",
+            url:"speaker/selectAll",
+            success:function (backData) {
+                JSON.stringify(backData);
+                speakerSheet = backData;
+            }
+        })
+    })
+
+
+    function showMusics(data) {
+        layer.open({
+            type:1,
+            content: $('#updateMusic').html(),
+            title:  '增加歌曲',
+            area: ['600px','600px'],
+            btn: ['提交','取消'],
+            success: function() {
+                $('#id');
+                $('#courseTitle');
+                $('#courseDesc');
+                console.log(sheets)
+                for(var i = 0;i<sheets.length;i++){
+                    if(sheets[i].id == 218){
+                        $("#courseId").append('<option selected value="' + sheets[i].id + '">' + sheets[i].courseTitle + '</option>');
+
+                    }else {
+                        $("#courseId").append('<option  value="' + sheets[i].id + '">' + sheets[i].courseTitle + '</option>');
+                    }
+                }
+                for(var i = 0;i<speakerSheet.length;i++){
+                    if(speakerSheet[i].id == 1){
+                        $("#speakerId").append('<option selected value="' + speakerSheet[i].id + '">' + speakerSheet[i].speakerName + '</option>');
+
+                    }else {
+                        $("#speakerId").append('<option  value="' + speakerSheet[i].id + '">' + speakerSheet[i].speakerName + '</option>');
+                    }
+                }
+                layui.form.render();
+            },
+            yes:function (index,layero) {
+                $.ajax({
+                    url: 'course/insertCourse',
+                    data: $("#music-edit-form").serialize(),
+                    method: 'post',
+                    success: function () {
+                        window.location.reload();//重新加载
+                    }
+
+                })
+            }
+        })
+
+    }
+</script>
+<script type="text/html" id="updateMusic">
+    <form id="music-edit-form" style="width: 80%" class="layui-form" lay-filter="music-edit-form">
+        <input type="hidden" name="id" id="id">
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">课程名称</label>
+            <div class="layui-input-block">
+                <input id="title" type="text" name="title" required lay-verify="required"
+                       autocomplete="off"
+                       class="layui-input">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">时间</label>
+            <div class="layui-input-block">
+                <input id="time" type="text" name="time" required lay-verify="required"
+                       autocomplete="off"
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">视频</label>
+            <div class="layui-input-block">
+                <input id="videoUrl" type="text" name="videoUrl" required lay-verify="required"
+                       autocomplete="off"
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">图片</label>
+            <div class="layui-input-block">
+                <input id="imageUrl" type="text" name="imageUrl" required lay-verify="required"
+                       autocomplete="off"
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">编码</label>
+            <div class="layui-input-block">
+                <input id="playNum" type="text" name="playNum" required lay-verify="required"
+                       autocomplete="off"
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">编码</label>
+            <div class="layui-input-block">
+                <input id="detail" type="text" name="detail" required lay-verify="required"
+                       autocomplete="off"
+                       class="layui-input">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">类型</label>
+            <div class="layui-input-inline">
+                <select name="courseId" id="courseId">
+
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">演讲人</label>
+            <div class="layui-input-inline">
+                <select name="speakerId" id="speakerId">
+
+                </select>
+            </div>
+        </div>
+    </form>
+</script>

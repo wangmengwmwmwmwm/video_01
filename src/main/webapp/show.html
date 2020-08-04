@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>视频管理</title>
+    <link rel="stylesheet" type="text/css" href="css1/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="layui/css/layui.css">
+    <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="layui/layui.js"></script>
+</head>
+<style>
+    #table{
+        width: 1000px;
+        margin-left: 15%;
+    }
+    #title2{
+        height: 50px;
+    }
+    .navbar-brand{
+        margin-left: 100px;
+
+    }
+    .title{
+        height: 60px;
+        padding-left:100px ;
+        background-color: whitesmoke;
+    }
+    #title1{
+        margin-top: 40px;
+        margin-left: 20%;
+
+    }
+    .exit{
+        color: #f8f9fa;
+    }
+    button{
+        margin-top: -5px;
+    }
+    #input{
+        margin-left: 10%;
+        width: 20%;
+    }
+    #input,.select{
+        height:37px;
+    }
+
+</style>
+<body>
+<script src="js/jquery-1.8.3.js"></script>
+
+<nav id="title2" class="navbar navbar-expand-sm bg-dark navbar-dark">
+      <!-- Brand/logo -->
+      <a class="navbar-brand" href="#">视频后台管理系统</a>
+      
+      <!-- Links -->
+      <ul class="navbar-nav">
+         <li class="nav-item">
+          <a class="nav-link" href="video.html">视频管理</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="Speaker.html">讲师管理</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="Course.html">课程管理</a>
+        </li>
+    <li class="nav-item layui-layout-right">
+              <a class="navbar-brand" href="admin/AdminOut">退出</a>
+            </li>
+      </ul>
+    <ul>
+
+    </ul>
+
+
+</nav>
+
+
+<div class="title">
+      <h2>视频管理</h2>
+</div>
+
+<blockquote class="layui-elem-quote quoteBox">
+    <form class="layui-form" action="" id="conditionForm">
+        <div class="layui-inline">
+            <a class="layui-btn layui-btn-danger layui-btn-normal delAll_btn" >批量删除</a>
+        </div>
+        <div class="layui-inline">
+            <a href="insert.html"><button type="button" class="layui-btn">增加</button></a>
+        </div>
+
+        <div class="layui-inline">
+            <div class="layui-input-inline">
+                <input type="text" name="title" placeholder="标题" autocomplete="off" class="layui-input">
+            </div>
+
+            <div class="layui-input-inline">
+                <select id="speaker1" name="speakerId" lay-search="">
+                </select>
+            </div>
+
+            <div class="layui-input-inline">
+                <select id="course1" name="courseId" lay-search="">
+                </select>
+            </div>
+            <button class="layui-btn" data-type="reload" id="conditionSearch" lay-submit lay-filter="sort11">搜索</button>
+        </div>
+    </form>
+</blockquote>
+
+<table class="layui-hide" id="test" lay-filter="test"></table>
+
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+
+
+<script>
+    layui.use(['table','form','layer','element'], function() {
+        var table = layui.table;
+        var form = layui.form;
+        var element = layui.element;
+        form.render();
+        var $ = layui.$
+            ,layer = layui.layer;
+        $(function () {
+            speaker1();
+            course1();
+        });
+
+        var render = table.render({
+            elem: '#test'
+            , url: 'video/findAll'
+            , toolbar: '#toolbarDemo' //开启头部工具栏，并为其绑定左侧模板
+            , defaultToolbar: ['filter', 'exports', 'print', { //自定义头部工具栏右侧图标。如无需自定义，去除该参数即可
+                title: '提示'
+                , layEvent: 'LAYTABLE_TIPS'
+                , icon: 'layui-icon-tips'
+            }]
+            , page: {
+                limit: 10//每页显示1条（ 向后台传值，每页显示条数 ）
+                , limits: [10, 15, 20] //可选每页条数
+                , first: '首页' //首页显示文字，默认显示页号
+                , last: '尾页'
+                , prev: '<em>←</em>' //上一页显示内容，默认显示 > <
+                , next: '<i class="layui-icon layui-icon-next"></i>'
+                , layout: ['prev', 'page', 'next', 'count', 'limit', 'skip', 'refresh'] //自定义分页布局
+            }
+            , title: '用户数据表'
+            , cols: [[ //表头
+                {type: 'checkbox', fixed: 'left'}
+                , {field: 'id', title: '序号', sort: true}
+                , {field: 'title', title: '名称'}
+                , {field: 'detail', title: '介绍', sort: true}
+                , {field: 'speakerName', title: '讲师', sort: true}
+                , {field: 'time', title: '时长', sort: true}
+                , {field: 'playNum', title: '播放次数', sort: true}
+                , {field: "right", title: "操作", toolbar: '#barDemo'}
+            ]]
+            , id: 'testReload'
+        });
+
+
+
+        //删除单个
+        table.on('tool(test)', function(obj){
+            var data = obj.data;
+            var videoId = data.id;
+            if(obj.event === 'del'){
+                layer.confirm('真的删除吗', function(index) {
+                    obj.del();
+                    layer.close(index);
+                    $.ajax(
+                        {
+                            /*async:true,*///同步或异步，默认为true异步，(false同步)
+                            /*layui使用ajax传送数据不能写此句：contentType:"application/json;charset=utf-8",*/
+                            //Invalid numeric value: Leading zeroes not allowed;data的属性值如果是数字，不能以0开头
+                            contentType: 'application/json',
+                            data:{},
+                            type:'post',
+                            url: "http://localhost:8080/video/delete?id=" + videoId,
+                            success: function (data) {
+                                console.log(videoId);
+                                console.log(data);
+                                console.log(typeof data)
+
+                            },
+                            error: function () {
+                                console.log(videoId);
+                                alert("连接异常")
+                            }
+                        })
+                    layer.close(index);
+                })
+
+            }else if (obj.event === 'edit') {
+                layer.open({
+                    //layer提供了5种层类型。可传入的值有：0（信息框，默认）1（页面层）2（iframe层）3（加载层）4（tips层）
+                    type: 1,
+                    title: "修改视频信息",
+                    area: ['420px', '330px'],
+                    /* btn:['提交','取消'],*/
+                    content: $("#updateForm")//引用的弹出层的页面层的方式加载修改界面表单
+                });
+                dataBack(data);
+                speaker(data);
+                course(data);
+                setFormValue(obj,data);
+            }
+
+        });
+
+
+
+        //数据回显
+        function dataBack(data) {
+            $(function () {
+                $.ajax({
+                    url:"video/findVideoById",
+                    data:{id:data.id},
+                    success:function (data) {
+                        console.log("数据回显"+data);
+                        $("#title").val(data.title);
+                        $("#time").val(data.time);
+                        $("#imageUrl").val(data.imageUrl);
+                        $("#videoUrl").val(data.videoUrl);
+                        $("#detail").val(data.detail);
+                    }
+                })
+            })
+        }
+
+        //教师显示
+        function speaker(data) {
+            $(function () {
+                $.ajax({
+                    url:"speaker/findSpeakerName",
+                    data:{},
+                    success:function (speakers) {
+                        console.log("类别显示"+speakers);
+                        $("#speaker").empty();
+                        for (var i = 0; i < speakers.length; i++) {
+                            if (speakers[i].id == data.speakerId) {
+                                $("#speaker").append('<option selected value="' + speakers[i].id + '">' + speakers[i].speakerName + '</option>');
+                            }else{
+                                $("#speaker").append('<option value="' + speakers[i].id + '">' + speakers[i].speakerName + '</option>');
+                            }
+                        }
+                        layui.form.render();//后追加到页面的元素，layui不渲染，必须render
+                    }
+                })
+            })
+        }
+
+        function speaker1() {
+            $(function () {
+                $.ajax({
+                    url:"speaker/findSpeakerName",
+                    data:{},
+                    success:function (speakers) {
+                        console.log("类别显示"+speakers);
+                        $("#speaker1").empty();
+                        $("#speaker1").append('<option value="">' + '--请选择老师--' + '</option>');
+                        for (var i = 0; i < speakers.length; i++) {
+                            $("#speaker1").append('<option value="' + speakers[i].id + '">' + speakers[i].speakerName + '</option>');
+                        }
+                        layui.form.render();//后追加到页面的元素，layui不渲染，必须render
+                    }
+                })
+            })
+        }
+
+        //课程显示
+        function course(data) {
+            $(function () {
+                $.ajax({
+                    url:"course/find",
+                    data:{},
+                    success:function (courses) {
+                        console.log("类别显示"+courses);
+                        $("#course").empty();
+                        for (var i = 0; i < courses.length; i++) {
+                            if (courses[i].id == data.courseId) {
+                                $("#course").append('<option selected value="' + courses[i].id + '">' + courses[i].courseTitle + '</option>');
+                            }else{
+                                $("#course").append('<option value="' + courses[i].id + '">' + courses[i].courseTitle + '</option>');
+                            }
+                        }
+                        layui.form.render();//后追加到页面的元素，layui不渲染，必须render
+                    }
+                })
+            })
+        }
+
+        function course1() {
+            $(function () {
+                $.ajax({
+                    url:"course/find",
+                    data:{},
+                    success:function (courses) {
+                        console.log("类别显示"+courses);
+                        $("#course1").empty();
+                        $("#course1").append('<option value="">' + '--请选择课程--' + '</option>');
+                        for (var i = 0; i < courses.length; i++) {
+                            $("#course1").append('<option value="' + courses[i].id + '">' + courses[i].courseTitle + '</option>');
+                        }
+                        layui.form.render();//后追加到页面的元素，layui不渲染，必须render
+                    }
+                })
+            })
+        }
+
+        //修改
+        function setFormValue(obj,data){
+            form.on('submit(demo11)', function(massage) {
+                var archive = $("#updateForm").serialize();
+                $.ajax({
+                    url:'video/update?id='+data.id,
+                    type:'post',
+                    data:archive,
+                    success:function (msg) {
+
+                        //var returnCode = msg.returnCode;//取得返回数据（Sting类型的字符串）的信息进行取值判断
+                        if(msg>0){
+                            layer.closeAll('loading');
+                            layer.load(2);
+                            layer.msg("修改成功");
+                            setTimeout(function(){
+                                obj.update({
+                                    title:data.title,
+                                    time:data.time,
+                                    imageUrl:data.imageUrl,
+                                    videoUrl:data.videoUrl,
+                                    detail:data.detail
+                                });//修改成功修改表格数据不进行跳转
+                                layer.closeAll();//关闭所有的弹出层
+                            }, 1000);
+                            //加载层-风格
+                        }else{
+                            layer.msg("修改失败");
+                        }
+                    }
+                });
+                return false;
+            })
+        }
+
+
+        //删除多个
+        //头工具栏事件
+        /*table.on('toolbar(test)', function(obj){*/
+        $(".delAll_btn").click(function(){
+            /*obj.config.id*/
+            var checkStatus = table.checkStatus('testReload');
+            var data = checkStatus.data;
+            if(data.length == 0){
+                layer.alert("请先选择数据");
+            }else {
+                layer.confirm('真的删除行么', function(index) {
+                    // var params = "";
+                    //js遍历
+                    // var array=new Array();
+                    var array=[];
+
+                    for (var i in data) {
+                        // params += "&id=" + data[i].id
+                        array.push(data[i].id);
+
+                    }
+                    // alert(data[i].id);
+                    // alert(array);
+                    // console.log(ids);
+
+                    $.ajax({
+
+                            data:JSON.stringify(array),
+                            contentType: 'application/json',//这一句不能省略
+                            type: 'post',
+                            url: "http://localhost:8080/video/deleteByIds",
+                            success: function (vc) {
+                                alert("成功删除"+vc);
+                                /*  table.reload("test",{});*/
+                                window.location.reload();
+
+                            }
+                        }
+                    )
+
+                })
+            }
+        });
+
+        //多条件查询
+        $('#conditionSearch').click(function () {
+            var sort = $("#conditionForm").serialize();
+            //执行重载
+            console.log()
+            table.reload('testReload', {
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+                ,methods:"post"
+                ,url:'video/fuzzySelect?'+sort
+                ,request: {
+                    page: 1
+                    ,limit:10
+                }
+                ,where: {
+                    //archiveSort:sort
+                }
+            });
+            return false;
+        });
+
+    })
+</script>
+
+
+<!--//这里是弹出层的表单信息
+//表单的id用于表单的选择，style是在本页隐藏，只有点击编辑才会弹出-->
+<!--<div class="layui-row" id="popUpdateTest" style="display:none">-->
+<!--<div class="layui-col-md10">-->
+<form class="layui-form" action="" id="updateForm" style="display:none">
+    <div class="layui-form-item">
+        <label class="layui-form-label">名称</label>
+        <div class="layui-input-block">
+            <input id="title" type="text" name="title" required  lay-verify="required" placeholder="视频名称" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">教师名字</label>
+        <div class="layui-input-block">
+            <select name="speakerId" lay-verify="required" id="speaker">
+            </select>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">所属课程</label>
+        <div class="layui-input-block">
+            <select name="courseId" lay-verify="required" id="course">
+            </select>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">时长</label>
+        <div class="layui-input-block">
+            <input id="time" type="number" name="time" required  lay-verify="required" placeholder="0" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">封面图片地址</label>
+        <div class="layui-input-block">
+            <input id="imageUrl" type="text" name="imageUrl" required  lay-verify="required" placeholder="封面图片地址" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">视频播放地址</label>
+        <div class="layui-input-block">
+            <input id="videoUrl" type="text" name="videoUrl" required  lay-verify="required" placeholder="视频播放地址" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-form-text">
+        <label class="layui-form-label">备注</label>
+        <div class="layui-input-block">
+            <textarea id="detail" name="detail" placeholder="请输入内容" class="layui-textarea"></textarea>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit lay-filter="demo11">确认修改</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+</form>
+<!--    </div>
+</div>-->
+
+</body>
+</html>
